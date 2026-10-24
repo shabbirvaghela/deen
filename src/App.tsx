@@ -1,3 +1,4 @@
+import { getExplanation } from "./services/explanationService";
 import { getDailyContent } from "./services/dailyService";
 import { useEffect, useState } from "react";
 import { maintainQueue, refillQueue } from "./services/syncService";
@@ -9,15 +10,60 @@ import type { ContentType, LearningContent } from "./types/content";
 function App() {
   const [status, setStatus] = useState("Initializing...");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingExplanation, setLoadingExplanation] = useState<string | null>(
+    null,
+  );
+  const [explanationErrors, setExplanationErrors] = useState<
+    Partial<Record<ContentType, string>>
+  >({});
+
   const [current, setCurrent] = useState<
     Partial<Record<ContentType, LearningContent>>
   >({});
+
   const [counts, setCounts] = useState({
     ayahQueue: 0,
     hadithQueue: 0,
     ayahSeen: 0,
     hadithSeen: 0,
   });
+
+  async function handleUnderstand(item: LearningContent | undefined) {
+    if (!item) return;
+
+    setExpandedId(item.id);
+    setExplanationErrors((previous) => ({
+      ...previous,
+      [item.type]: undefined,
+    }));
+
+    if (item.hinglishTranslation && item.explanation?.simpleMeaning) {
+      return;
+    }
+
+    setLoadingExplanation(item.id);
+
+    try {
+      const updated = await getExplanation(item);
+
+      setCurrent((previous) => ({
+        ...previous,
+        [item.type]: updated,
+      }));
+    } catch (error) {
+      setExplanationErrors((previous) => ({
+        ...previous,
+        [item.type]:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong. Please try again.",
+      }));
+    } finally {
+      setLoadingExplanation((previous) =>
+        previous === item.id ? null : previous,
+      );
+    }
+  }
 
   async function refreshCounts() {
     const [ayahQueue, hadithQueue, ayahSeen, hadithSeen] = await Promise.all([
@@ -36,6 +82,7 @@ function App() {
     async function start() {
       try {
         await initializeDatabase();
+
         const [ayah, hadith] = await Promise.all([
           getDailyContent("ayah"),
           getDailyContent("hadith"),
@@ -50,15 +97,15 @@ function App() {
 
         void maintainQueue("ayah");
         void maintainQueue("hadith");
+
         await refreshCounts();
 
         if (active) setStatus("Database ready");
 
-        // Don't block the UI while fetching.
         void refillQueue("ayah");
         void refillQueue("hadith");
       } catch (error) {
-        console.error(error);
+        console.error("Initialization failed:", error);
         if (active) setStatus("Database initialization failed");
       }
     }
@@ -72,26 +119,99 @@ function App() {
 
   async function showNext(type: ContentType) {
     try {
+      setExplanationErrors((previous) => ({
+        ...previous,
+        [type]: undefined,
+      }));
+
       const item = await consumeNext(type);
 
       if (!item) {
-        // Try to replenish an empty queue.
         void refillQueue(type);
         setStatus(`Loading unseen ${type}...`);
         return;
       }
 
       setCurrent((previous) => ({ ...previous, [type]: item }));
-      await refreshCounts();
 
-      // Start refill only when the queue is low.
+      setExpandedId(null);
+      await refreshCounts();
       void maintainQueue(type);
 
       setStatus("Content loaded successfully");
     } catch (error) {
-      console.error(error);
+      console.error("Could not load content:", error);
       setStatus("Could not load content.");
     }
+  }
+
+  function renderExplanation(item: LearningContent) {
+    const isLoading = loadingExplanation === item.id;
+    const error = explanationErrors[item.type];
+
+    return (
+      <>
+        <button
+          className="rounded-lg border border-emerald-700 px-4 py-2 text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isLoading}
+          onClick={() => void handleUnderstand(item)}
+        >
+          {isLoading ? "Explaining..." : "Understand in Detail"}
+        </button>
+
+        {expandedId === item.id && (
+          <div className="space-y-3 rounded-lg bg-emerald-50 p-4">
+            {error && (
+              <div className="space-y-2">
+                <p role="alert" className="text-red-700">
+                  {error}
+                </p>
+                <button
+                  className="rounded-lg border border-red-700 px-3 py-1 text-red-700"
+                  disabled={isLoading}
+                  onClick={() => void handleUnderstand(item)}
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {isLoading && (
+              <p role="status">Hinglish explanation load ho rahi hai...</p>
+            )}
+
+            {item.hinglishTranslation && (
+              <p>
+                <strong>Hinglish translation:</strong>{" "}
+                {item.hinglishTranslation}
+              </p>
+            )}
+
+            {item.explanation && (
+              <>
+                <p>
+                  <strong>Simple meaning:</strong>{" "}
+                  {item.explanation.simpleMeaning}
+                </p>
+                <p>
+                  <strong>Context:</strong> {item.explanation.context}
+                </p>
+                <p>
+                  <strong>Example:</strong> {item.explanation.example}
+                </p>
+                <p>
+                  <strong>Practical lesson:</strong>{" "}
+                  {item.explanation.practicalLesson}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Source note:</strong> {item.explanation.sourceNote}
+                </p>
+              </>
+            )}
+          </div>
+        )}
+      </>
+    );
   }
 
   return (
@@ -100,51 +220,28 @@ function App() {
         <h1 className="text-3xl font-bold text-emerald-900">Deen</h1>
         <p role="status">{status}</p>
 
-        <div className="rounded-xl border bg-white p-4 space-y-2">
+        <div className="space-y-3 rounded-xl border bg-white p-4">
           <h2 className="font-semibold">Quran Ayat</h2>
-          <p>{current.ayah?.transliteration ?? "Press New Ayat to start"}</p>
-          <p>
-            {current.ayah?.hinglishTranslation ??
-              current.ayah?.sourceTranslation?.text ??
-              ""}
-          </p>
-          <p className="text-sm text-gray-500">
-            {current.ayah?.reference.id ?? ""}
-          </p>
 
-          <button
-            className="rounded-lg border border-emerald-700 px-4 py-2 text-emerald-800"
-            onClick={() =>
-              setExpandedId(
-                expandedId === current.ayah?.id
-                  ? null
-                  : (current.ayah?.id ?? null),
-              )
-            }
-          >
-            Understand in Detail
-          </button>
-
-          {expandedId === current.ayah?.id && current.ayah && (
-            <div className="mt-3 rounded-lg bg-emerald-50 p-4">
-              <h3 className="font-semibold">Detailed Explanation</h3>
-              <p className="mt-2">
-                {current.ayah.explanation?.simpleMeaning ??
-                  "Explanation abhi available nahi hai. Agle step mein verified explanation service connect karenge."}
+          {current.ayah ? (
+            <>
+              <p>{current.ayah.originalText}</p>
+              <p>{current.ayah.transliteration}</p>
+              <p>
+                {current.ayah.hinglishTranslation ??
+                  current.ayah.sourceTranslation?.text ??
+                  ""}
               </p>
-              {current.ayah.explanation?.example && (
-                <p className="mt-2">
-                  <strong>Example:</strong> {current.ayah.explanation.example}
-                </p>
-              )}
-              {current.ayah.explanation?.practicalLesson && (
-                <p className="mt-2">
-                  <strong>Practical lesson:</strong>{" "}
-                  {current.ayah.explanation.practicalLesson}
-                </p>
-              )}
-            </div>
+              <p className="text-sm text-gray-500">
+                {current.ayah.reference.id}
+              </p>
+
+              {renderExplanation(current.ayah)}
+            </>
+          ) : (
+            <p>No Ayat available yet. Please try again shortly.</p>
           )}
+
           <button
             className="rounded-lg bg-emerald-700 px-4 py-2 text-white"
             onClick={() => void showNext("ayah")}
@@ -153,27 +250,27 @@ function App() {
           </button>
         </div>
 
-        <div className="rounded-xl border bg-white p-4 space-y-2">
+        <div className="space-y-3 rounded-xl border bg-white p-4">
           <h2 className="font-semibold">Hadith</h2>
 
           {current.hadith ? (
             <>
               <p>{current.hadith.originalText}</p>
-
               <p>
                 {current.hadith.hinglishTranslation ??
                   current.hadith.sourceTranslation?.text ??
                   "Translation unavailable"}
               </p>
-
               <p className="text-sm text-gray-500">
                 {current.hadith.reference.source} ·{" "}
                 {current.hadith.reference.hadithNumber ??
                   current.hadith.reference.id}
               </p>
+
+              {renderExplanation(current.hadith)}
             </>
           ) : (
-            <p>Press New Hadith to load a hadith.</p>
+            <p>No Hadith available yet. Please try again shortly.</p>
           )}
 
           <button
@@ -184,8 +281,8 @@ function App() {
           </button>
         </div>
 
-        <div className="rounded-xl border bg-white p-4 space-y-1">
-          <h2 className="font-semibold">Queue & History</h2>
+        <div className="space-y-1 rounded-xl border bg-white p-4">
+          <h2 className="font-semibold">Queue &amp; History</h2>
           <p>Ayat queue: {counts.ayahQueue}</p>
           <p>Ayat seen: {counts.ayahSeen}</p>
           <p>Hadith queue: {counts.hadithQueue}</p>

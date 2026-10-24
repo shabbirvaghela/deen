@@ -24,6 +24,13 @@ export interface LearningContent {
 
   // Simple Hinglish meaning
   hinglishTranslation?: string;
+  explanation?: {
+    simpleMeaning: string;
+    context: string;
+    example: string;
+    practicalLesson: string;
+    sourceNote?: string;
+  };
   sourceTranslation?: {
     text: string;
     language: string;

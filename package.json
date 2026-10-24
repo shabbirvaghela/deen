@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:api": "tsx watch server/index.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:api\""
   },
   "dependencies": {
+    "@google/genai": "^2.31.0",
     "@tailwindcss/vite": "^4.3.3",
     "dexie": "^4.4.7",
     "dotenv": "^18.0.9",
