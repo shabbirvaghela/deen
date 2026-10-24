@@ -15,12 +15,19 @@ export async function getDailyContent(
     db.history,
     db.dailySelections,
     async () => {
+      // Keep today's selection if its content still exists.
       const existing = await db.dailySelections.get(selectionId);
 
       if (existing) {
-        return (await db.content.get(existing.contentId)) ?? null;
+        const saved = await db.content.get(existing.contentId);
+
+        if (saved?.type === type) return saved;
+
+        // Recover if the selection points to missing content.
+        await db.dailySelections.delete(selectionId);
       }
 
+      // First preference: next unseen queued item.
       const queued = await db.queue
         .where("type")
         .equals(type)
@@ -29,7 +36,7 @@ export async function getDailyContent(
       for (const entry of queued) {
         const item = await db.content.get(entry.id);
 
-        if (!item) {
+        if (!item || item.type !== type) {
           await db.queue.delete(entry.id);
           continue;
         }
@@ -50,7 +57,7 @@ export async function getDailyContent(
 
         await db.queue.delete(entry.id);
 
-        await db.dailySelections.add({
+        await db.dailySelections.put({
           id: selectionId,
           date,
           type,
@@ -60,7 +67,23 @@ export async function getDailyContent(
         return item;
       }
 
-      return null;
+      // Queue empty: use content already stored locally.
+      const savedItems = await db.content.where("type").equals(type).toArray();
+
+      if (savedItems.length === 0) return null;
+
+      const selected =
+        savedItems[Math.floor(Math.random() * savedItems.length)];
+
+      await db.dailySelections.put({
+        id: selectionId,
+        date,
+        type,
+        contentId: selected.id,
+      });
+
+      // This is a fallback, so don't record it as newly seen.
+      return selected;
     },
   );
 }
