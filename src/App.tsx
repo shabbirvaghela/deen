@@ -8,8 +8,10 @@ import { getSeenCount } from "./services/historyService";
 import type { ContentType, LearningContent } from "./types/content";
 
 function App() {
+  type Tab = "home" | "progress" | "settings";
+  const [activeTab, setActiveTab] = useState<Tab>("home");
   const [status, setStatus] = useState("Initializing...");
-
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [current, setCurrent] = useState<
     Partial<Record<ContentType, LearningContent>>
   >({});
@@ -208,14 +210,33 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#f7f8f3] text-[#183b30]">
-      <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-3xl px-4 pb-28 pt-5 sm:px-6 sm:pb-28 sm:pt-8">
         {/* Header */}
         <header className="mb-7 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#064e3b] text-3xl shadow-lg shadow-emerald-950/15">
-              <span aria-hidden="true">☾</span>
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl shadow-lg shadow-emerald-950/15">
+              <img
+                src="/pwa-192x192.png"
+                alt="Deen app logo"
+                className="h-full w-full object-cover"
+                width={56}
+                height={56}
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Deen</h1>
@@ -229,348 +250,434 @@ function App() {
             ✦ Daily learning
           </div>
         </header>
-
-        {/* Welcome banner */}
-        <section className="relative mb-7 overflow-hidden rounded-3xl bg-gradient-to-br from-[#064e3b] via-[#08634a] to-[#123e32] p-6 text-white shadow-xl shadow-emerald-950/10 sm:p-8">
-          <div className="pointer-events-none absolute -right-8 -top-12 text-[150px] text-white/[0.06]">
-            ☾
-          </div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#e6cc87]">
-            Your daily reminder
-          </p>
-          <h2 className="max-w-md text-2xl font-semibold leading-snug sm:text-3xl">
-            Bring knowledge into your everyday life.
-          </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-emerald-50/80">
-            Understand the Qur’an and Hadith, one lesson at a time.
-          </p>
-          <div className="mt-6 flex items-center gap-2 text-sm text-[#f2dfaa]">
-            <span aria-hidden="true">✦</span>
-            <span>Read • Understand • Practice</span>
-          </div>
-        </section>
-
-        {/* Status */}
-        <div
-          role="status"
-          className="mb-6 flex items-start gap-3 rounded-2xl border border-[#e2e8dc] bg-white px-4 py-3"
-        >
-          <span className="mt-0.5 text-lg" aria-hidden="true">
-            ◈
-          </span>
-          <div>
-            <p className="text-sm font-semibold">Learning status</p>
-            <p className="mt-1 text-sm text-[#718078]">{status}</p>
-          </div>
-        </div>
-
-        {/* Ayah card */}
-        <section className="mb-6 overflow-hidden rounded-3xl border border-[#e2e8dc] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#edf0e9] px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e7f1e8] text-xl">
-                📖
-              </div>
-              <div>
-                <h2 className="font-bold">Qur’an Ayah</h2>
-                <p className="text-xs text-[#829087]">Verse of the day</p>
-              </div>
-            </div>
-            <span className="rounded-full bg-[#edf5eb] px-3 py-1 text-xs font-semibold text-[#34714e]">
-              AYAH
-            </span>
-          </div>
-
-          <div className="p-5 sm:p-6">
-            {current.ayah ? (
-              <>
-                <div className="rounded-2xl bg-[#f5f7ef] px-4 py-7 sm:px-6 sm:py-9">
-                  <p
-                    dir="rtl"
-                    lang="ar"
-                    className="text-right text-3xl leading-[2] text-[#164b37] sm:text-4xl"
-                  >
-                    {current.ayah.originalText}
-                  </p>
+        <>
+          {activeTab === "home" && (
+            <>
+              {/* Welcome banner */}
+              {/* <section className="relative mb-7 overflow-hidden rounded-3xl bg-gradient-to-br from-[#064e3b] via-[#08634a] to-[#123e32] p-6 text-white shadow-xl shadow-emerald-950/10 sm:p-8">
+                <div className="pointer-events-none absolute -right-8 -top-12 text-[150px] text-white/[0.06]">
+                  ☾
                 </div>
-
-                {current.ayah.transliteration && (
-                  <p className="mt-5 text-sm italic leading-7 text-[#718078]">
-                    {current.ayah.transliteration}
-                  </p>
-                )}
-
-                <div className="mt-4 border-l-[3px] border-[#d2b46b] pl-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#8d7135]">
-                    Translation
-                  </p>
-                  <p className="mt-2 leading-7 text-[#334d40]">
-                    {current.ayah.hinglishTranslation ??
-                      current.ayah.sourceTranslation?.text ??
-                      "Translation not available yet."}
-                  </p>
-                </div>
-
-                <p className="mt-4 text-xs text-[#89958c]">
-                  Reference: {current.ayah.reference.id}
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#e6cc87]">
+                  Your daily reminder
                 </p>
+                <h2 className="max-w-md text-2xl font-semibold leading-snug sm:text-3xl">
+                  Bring knowledge into your everyday life.
+                </h2>
+                <p className="mt-3 max-w-md text-sm leading-6 text-emerald-50/80">
+                  Understand the Qur’an and Hadith, one lesson at a time.
+                </p>
+                <div className="mt-6 flex items-center gap-2 text-sm text-[#f2dfaa]">
+                  <span aria-hidden="true">✦</span>
+                  <span>Read • Understand • Practice</span>
+                </div>
+              </section> */}
 
-                {expandedAyah && (
-                  <div className="mt-5 space-y-4 rounded-2xl border border-[#e0eadc] bg-[#f8faf5] p-4 sm:p-5">
-                    {isAyahLoading && (
-                      <p role="status" className="text-sm text-[#527264]">
-                        Preparing your explanation…
-                      </p>
-                    )}
+              {/* Ayah card */}
+              <section className="mb-6 overflow-hidden rounded-3xl border border-[#e2e8dc] bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-[#edf0e9] px-5 py-4 sm:px-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e7f1e8] text-xl">
+                      📖
+                    </div>
+                    <div>
+                      <h2 className="font-bold">Qur’an Ayah</h2>
+                      <p className="text-xs text-[#829087]">Verse of the day</p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-[#edf5eb] px-3 py-1 text-xs font-semibold text-[#34714e]">
+                    AYAH
+                  </span>
+                </div>
 
-                    {ayahError && (
-                      <div>
-                        <p role="alert" className="text-sm text-red-700">
-                          {ayahError}
-                        </p>
-                        <button
-                          className="mt-2 text-sm font-semibold text-[#176447] underline"
-                          onClick={() => void handleUnderstandAyah()}
+                <div className="p-5 sm:p-6">
+                  {current.ayah ? (
+                    <>
+                      <div className="rounded-2xl bg-[#f5f7ef] px-4 py-7 sm:px-6 sm:py-9">
+                        <p
+                          dir="rtl"
+                          lang="ar"
+                          className="text-right text-3xl leading-[2] text-[#164b37] sm:text-4xl"
                         >
-                          Try again
-                        </button>
-                      </div>
-                    )}
-
-                    {current.ayah.hinglishTranslation && (
-                      <div>
-                        <h3 className="font-semibold">Hinglish translation</h3>
-                        <p className="mt-1 text-sm leading-6 text-[#52675a]">
-                          {current.ayah.hinglishTranslation}
+                          {current.ayah.originalText}
                         </p>
                       </div>
-                    )}
 
-                    {current.ayah.explanation && (
-                      <>
-                        {[
-                          [
-                            "Simple meaning",
-                            current.ayah.explanation.simpleMeaning,
-                          ],
-                          ["Context", current.ayah.explanation.context],
-                          [
-                            "Everyday example",
-                            current.ayah.explanation.example,
-                          ],
-                          [
-                            "Practical lesson",
-                            current.ayah.explanation.practicalLesson,
-                          ],
-                          ["Source note", current.ayah.explanation.sourceNote],
-                        ].map(([title, value]) =>
-                          value ? (
-                            <div key={title}>
-                              <h3 className="font-semibold">{title}</h3>
+                      {current.ayah.transliteration && (
+                        <p className="mt-5 text-sm italic leading-7 text-[#718078]">
+                          {current.ayah.transliteration}
+                        </p>
+                      )}
+
+                      <div className="mt-4 border-l-[3px] border-[#d2b46b] pl-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#8d7135]">
+                          Translation
+                        </p>
+                        <p className="mt-2 leading-7 text-[#334d40]">
+                          {current.ayah.hinglishTranslation ??
+                            current.ayah.sourceTranslation?.text ??
+                            "Translation not available yet."}
+                        </p>
+                      </div>
+
+                      <p className="mt-4 text-xs text-[#89958c]">
+                        Reference: {current.ayah.reference.id}
+                      </p>
+
+                      {expandedAyah && (
+                        <div className="mt-5 space-y-4 rounded-2xl border border-[#e0eadc] bg-[#f8faf5] p-4 sm:p-5">
+                          {isAyahLoading && (
+                            <p role="status" className="text-sm text-[#527264]">
+                              Preparing your explanation…
+                            </p>
+                          )}
+
+                          {ayahError && (
+                            <div>
+                              <p role="alert" className="text-sm text-red-700">
+                                {ayahError}
+                              </p>
+                              <button
+                                className="mt-2 text-sm font-semibold text-[#176447] underline"
+                                onClick={() => void handleUnderstandAyah()}
+                              >
+                                Try again
+                              </button>
+                            </div>
+                          )}
+
+                          {current.ayah.hinglishTranslation && (
+                            <div>
+                              <h3 className="font-semibold">
+                                Hinglish translation
+                              </h3>
                               <p className="mt-1 text-sm leading-6 text-[#52675a]">
-                                {value}
+                                {current.ayah.hinglishTranslation}
                               </p>
                             </div>
-                          ) : null,
-                        )}
-                      </>
-                    )}
+                          )}
+
+                          {current.ayah.explanation && (
+                            <>
+                              {[
+                                [
+                                  "Simple meaning",
+                                  current.ayah.explanation.simpleMeaning,
+                                ],
+                                ["Context", current.ayah.explanation.context],
+                                [
+                                  "Everyday example",
+                                  current.ayah.explanation.example,
+                                ],
+                                [
+                                  "Practical lesson",
+                                  current.ayah.explanation.practicalLesson,
+                                ],
+                                [
+                                  "Source note",
+                                  current.ayah.explanation.sourceNote,
+                                ],
+                              ].map(([title, value]) =>
+                                value ? (
+                                  <div key={title}>
+                                    <h3 className="font-semibold">{title}</h3>
+                                    <p className="mt-1 text-sm leading-6 text-[#52675a]">
+                                      {value}
+                                    </p>
+                                  </div>
+                                ) : null,
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        className="mt-5 w-full rounded-xl bg-[#07543d] px-4 py-3.5 font-semibold text-white transition hover:bg-[#06432f] disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isAyahLoading}
+                        onClick={() => void handleUnderstandAyah()}
+                      >
+                        {isAyahLoading
+                          ? "Preparing explanation…"
+                          : expandedAyah
+                            ? "Refresh understanding"
+                            : "Understand in detail"}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="py-8 text-center text-sm text-[#718078]">
+                      No saved Ayah available yet. Connect to the internet to
+                      download content.
+                    </p>
+                  )}
+
+                  <button
+                    className="mt-3 w-full rounded-xl border border-[#d9e4d7] px-4 py-3 font-semibold text-[#245b43] transition hover:bg-[#f5f8f2]"
+                    onClick={() => void showNext("ayah")}
+                  >
+                    ↻ &nbsp; New Ayah
+                  </button>
+                </div>
+              </section>
+
+              {/* Hadith card */}
+              <section className="mb-7 overflow-hidden rounded-3xl border border-[#e2e8dc] bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-[#edf0e9] px-5 py-4 sm:px-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fbf0d9] text-xl">
+                      ✨
+                    </div>
+                    <div>
+                      <h2 className="font-bold">Hadith</h2>
+                      <p className="text-xs text-[#829087]">
+                        Prophetic teachings
+                      </p>
+                    </div>
                   </div>
-                )}
-
-                <button
-                  className="mt-5 w-full rounded-xl bg-[#07543d] px-4 py-3.5 font-semibold text-white transition hover:bg-[#06432f] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isAyahLoading}
-                  onClick={() => void handleUnderstandAyah()}
-                >
-                  {isAyahLoading
-                    ? "Preparing explanation…"
-                    : expandedAyah
-                      ? "Refresh understanding"
-                      : "Understand in detail"}
-                </button>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-[#718078]">
-                No saved Ayah available yet. Connect to the internet to download
-                content.
-              </p>
-            )}
-
-            <button
-              className="mt-3 w-full rounded-xl border border-[#d9e4d7] px-4 py-3 font-semibold text-[#245b43] transition hover:bg-[#f5f8f2]"
-              onClick={() => void showNext("ayah")}
-            >
-              ↻ &nbsp; New Ayah
-            </button>
-          </div>
-        </section>
-
-        {/* Hadith card */}
-        <section className="mb-7 overflow-hidden rounded-3xl border border-[#e2e8dc] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#edf0e9] px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fbf0d9] text-xl">
-                ✨
-              </div>
-              <div>
-                <h2 className="font-bold">Hadith</h2>
-                <p className="text-xs text-[#829087]">Prophetic teachings</p>
-              </div>
-            </div>
-            <span className="rounded-full bg-[#fbf1dd] px-3 py-1 text-xs font-semibold text-[#8d7135]">
-              HADITH
-            </span>
-          </div>
-
-          <div className="p-5 sm:p-6">
-            {current.hadith ? (
-              <>
-                <div className="rounded-2xl bg-[#fcf8ee] p-5 sm:p-6">
-                  <p className="text-lg leading-8 text-[#354b3d]">
-                    {current.hadith.hinglishTranslation ??
-                      current.hadith.sourceTranslation?.text ??
-                      "Translation not available yet."}
-                  </p>
+                  <span className="rounded-full bg-[#fbf1dd] px-3 py-1 text-xs font-semibold text-[#8d7135]">
+                    HADITH
+                  </span>
                 </div>
 
-                <p className="mt-4 text-xs leading-5 text-[#89958c]">
-                  {current.hadith.reference.source}
-                  {" · "}
-                  {current.hadith.reference.hadithNumber ??
-                    current.hadith.reference.id}
-                  {current.hadith.authenticity
-                    ? ` · ${current.hadith.authenticity}`
-                    : ""}
-                </p>
+                <div className="p-5 sm:p-6">
+                  {current.hadith ? (
+                    <>
+                      <div className="rounded-2xl bg-[#fcf8ee] p-5 sm:p-6">
+                        <p className="text-lg leading-8 text-[#354b3d]">
+                          {current.hadith.hinglishTranslation ??
+                            current.hadith.sourceTranslation?.text ??
+                            "Translation not available yet."}
+                        </p>
+                      </div>
 
-                {expandedHadith && (
-                  <div className="mt-5 space-y-4 rounded-2xl border border-[#eee5d1] bg-[#fdfbf5] p-4 sm:p-5">
-                    {isHadithLoading && (
-                      <p role="status" className="text-sm text-[#8d7135]">
-                        Preparing your explanation…
+                      <p className="mt-4 text-xs leading-5 text-[#89958c]">
+                        {current.hadith.reference.source}
+                        {" · "}
+                        {current.hadith.reference.hadithNumber ??
+                          current.hadith.reference.id}
+                        {current.hadith.authenticity
+                          ? ` · ${current.hadith.authenticity}`
+                          : ""}
                       </p>
-                    )}
 
-                    {hadithError && (
-                      <div>
-                        <p role="alert" className="text-sm text-red-700">
-                          {hadithError}
-                        </p>
-                        <button
-                          className="mt-2 text-sm font-semibold text-[#176447] underline"
-                          onClick={() => void handleUnderstandHadith()}
-                        >
-                          Try again
-                        </button>
-                      </div>
-                    )}
-
-                    {current.hadith.hinglishTranslation && (
-                      <div>
-                        <h3 className="font-semibold">Hinglish translation</h3>
-                        <p className="mt-1 text-sm leading-6 text-[#52675a]">
-                          {current.hadith.hinglishTranslation}
-                        </p>
-                      </div>
-                    )}
-
-                    {current.hadith.explanation &&
-                      [
-                        [
-                          "Simple meaning",
-                          current.hadith.explanation.simpleMeaning,
-                        ],
-                        ["Context", current.hadith.explanation.context],
-                        [
-                          "Everyday example",
-                          current.hadith.explanation.example,
-                        ],
-                        [
-                          "Practical lesson",
-                          current.hadith.explanation.practicalLesson,
-                        ],
-                        ["Source note", current.hadith.explanation.sourceNote],
-                      ].map(([title, value]) =>
-                        value ? (
-                          <div key={title}>
-                            <h3 className="font-semibold">{title}</h3>
-                            <p className="mt-1 text-sm leading-6 text-[#52675a]">
-                              {value}
+                      {expandedHadith && (
+                        <div className="mt-5 space-y-4 rounded-2xl border border-[#eee5d1] bg-[#fdfbf5] p-4 sm:p-5">
+                          {isHadithLoading && (
+                            <p role="status" className="text-sm text-[#8d7135]">
+                              Preparing your explanation…
                             </p>
-                          </div>
-                        ) : null,
+                          )}
+
+                          {hadithError && (
+                            <div>
+                              <p role="alert" className="text-sm text-red-700">
+                                {hadithError}
+                              </p>
+                              <button
+                                className="mt-2 text-sm font-semibold text-[#176447] underline"
+                                onClick={() => void handleUnderstandHadith()}
+                              >
+                                Try again
+                              </button>
+                            </div>
+                          )}
+
+                          {current.hadith.hinglishTranslation && (
+                            <div>
+                              <h3 className="font-semibold">
+                                Hinglish translation
+                              </h3>
+                              <p className="mt-1 text-sm leading-6 text-[#52675a]">
+                                {current.hadith.hinglishTranslation}
+                              </p>
+                            </div>
+                          )}
+
+                          {current.hadith.explanation &&
+                            [
+                              [
+                                "Simple meaning",
+                                current.hadith.explanation.simpleMeaning,
+                              ],
+                              ["Context", current.hadith.explanation.context],
+                              [
+                                "Everyday example",
+                                current.hadith.explanation.example,
+                              ],
+                              [
+                                "Practical lesson",
+                                current.hadith.explanation.practicalLesson,
+                              ],
+                              [
+                                "Source note",
+                                current.hadith.explanation.sourceNote,
+                              ],
+                            ].map(([title, value]) =>
+                              value ? (
+                                <div key={title}>
+                                  <h3 className="font-semibold">{title}</h3>
+                                  <p className="mt-1 text-sm leading-6 text-[#52675a]">
+                                    {value}
+                                  </p>
+                                </div>
+                              ) : null,
+                            )}
+                        </div>
                       )}
-                  </div>
-                )}
 
-                <button
-                  className="mt-5 w-full rounded-xl bg-[#b28b3d] px-4 py-3.5 font-semibold text-white transition hover:bg-[#98732f] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isHadithLoading}
-                  onClick={() => void handleUnderstandHadith()}
-                >
-                  {isHadithLoading
-                    ? "Preparing explanation…"
-                    : expandedHadith
-                      ? "Refresh understanding"
-                      : "Understand in detail"}
-                </button>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-[#718078]">
-                No saved Hadith available yet. Connect to the internet to
-                download content.
-              </p>
-            )}
+                      <button
+                        className="mt-5 w-full rounded-xl bg-[#b28b3d] px-4 py-3.5 font-semibold text-white transition hover:bg-[#98732f] disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isHadithLoading}
+                        onClick={() => void handleUnderstandHadith()}
+                      >
+                        {isHadithLoading
+                          ? "Preparing explanation…"
+                          : expandedHadith
+                            ? "Refresh understanding"
+                            : "Understand in detail"}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="py-8 text-center text-sm text-[#718078]">
+                      No saved Hadith available yet. Connect to the internet to
+                      download content.
+                    </p>
+                  )}
 
-            <button
-              className="mt-3 w-full rounded-xl border border-[#e9dfc7] px-4 py-3 font-semibold text-[#80652e] transition hover:bg-[#fdf9ef]"
-              onClick={() => void showNext("hadith")}
-            >
-              ↻ &nbsp; New Hadith
-            </button>
-          </div>
-        </section>
+                  <button
+                    className="mt-3 w-full rounded-xl border border-[#e9dfc7] px-4 py-3 font-semibold text-[#80652e] transition hover:bg-[#fdf9ef]"
+                    onClick={() => void showNext("hadith")}
+                  >
+                    ↻ &nbsp; New Hadith
+                  </button>
+                </div>
+              </section>
+            </>
+          )}
+        </>
 
         {/* Progress dashboard */}
-        <section className="rounded-3xl border border-[#e2e8dc] bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8d7135]">
-              Your journey
+        {activeTab === "progress" && (
+          <section className="rounded-3xl border border-[#e2e8dc] bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8d7135]">
+                Your journey
+              </p>
+              <h2 className="mt-1 text-xl font-bold">Learning progress</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[#f0f6ee] p-4">
+                <p className="text-sm text-[#64796b]">Ayat seen</p>
+                <p className="mt-2 text-3xl font-bold text-[#176447]">
+                  {counts.ayahSeen}
+                </p>
+                <p className="mt-1 text-xs text-[#718078]">
+                  {counts.ayahQueue} ready to explore
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-[#fcf5e7] p-4">
+                <p className="text-sm text-[#8d784d]">Hadith seen</p>
+                <p className="mt-2 text-3xl font-bold text-[#92702d]">
+                  {counts.hadithSeen}
+                </p>
+                <p className="mt-1 text-xs text-[#8d784d]">
+                  {counts.hadithQueue} ready to explore
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-5 text-center text-xs leading-5 text-[#89958c]">
+              Small, consistent steps can build lasting understanding.
             </p>
-            <h2 className="mt-1 text-xl font-bold">Learning progress</h2>
-          </div>
+          </section>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-[#f0f6ee] p-4">
-              <p className="text-sm text-[#64796b]">Ayat seen</p>
-              <p className="mt-2 text-3xl font-bold text-[#176447]">
-                {counts.ayahSeen}
+        {activeTab === "settings" && (
+          <section className="space-y-4 rounded-3xl border border-[#e2e8dc] bg-white p-5 shadow-sm sm:p-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8d7135]">
+                Preferences
               </p>
-              <p className="mt-1 text-xs text-[#718078]">
-                {counts.ayahQueue} ready to explore
+              <h2 className="mt-1 text-xl font-bold">Settings</h2>
+              <p className="mt-2 text-sm leading-6 text-[#718078]">
+                Deen keeps saved learning content on this device for offline
+                reading.
               </p>
             </div>
 
-            <div className="rounded-2xl bg-[#fcf5e7] p-4">
-              <p className="text-sm text-[#8d784d]">Hadith seen</p>
-              <p className="mt-2 text-3xl font-bold text-[#92702d]">
-                {counts.hadithSeen}
+            <div className="flex items-center justify-between rounded-2xl bg-[#f5f7ef] p-4">
+              <div>
+                <p className="font-semibold">Connection</p>
+                <p className="mt-1 text-sm text-[#718078]">
+                  {isOnline
+                    ? "Internet connection detected"
+                    : "Using saved content where available"}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  isOnline
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {isOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-[#e2e8dc] p-4">
+              <p className="font-semibold">Local learning data</p>
+              <p className="mt-1 text-sm text-[#718078]">
+                Ayat seen: {counts.ayahSeen} · Hadith seen: {counts.hadithSeen}
               </p>
-              <p className="mt-1 text-xs text-[#8d784d]">
-                {counts.hadithQueue} ready to explore
+              <p className="mt-2 text-xs leading-5 text-[#89958c]">
+                Your current progress is stored in this browser's local
+                database.
               </p>
             </div>
-          </div>
 
-          <p className="mt-5 text-center text-xs leading-5 text-[#89958c]">
-            Small, consistent steps can build lasting understanding.
-          </p>
-        </section>
+            <p className="text-sm text-[#718078]">Status: {status}</p>
+          </section>
+        )}
 
         <footer className="py-7 text-center text-xs text-[#89958c]">
           Made for learning and reflection · Deen
         </footer>
+
+        <nav
+          aria-label="Main navigation"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-[#dfe8dc] bg-white/95 px-4 pt-2 backdrop-blur"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
+        >
+          <div className="mx-auto flex max-w-xl items-center justify-around">
+            {(
+              [
+                { id: "home", label: "Home", icon: "⌂" },
+                { id: "progress", label: "Progress", icon: "◷" },
+                { id: "settings", label: "Settings", icon: "⚙" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                className={`flex min-w-20 flex-col items-center gap-1 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                  activeTab === tab.id
+                    ? "bg-[#edf5eb] text-[#07543d]"
+                    : "text-[#87938a] hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-xl leading-none" aria-hidden="true">
+                  {tab.icon}
+                </span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </nav>
       </div>
     </main>
   );

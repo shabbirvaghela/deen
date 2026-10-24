@@ -40,13 +40,4 @@ export interface LearningContent {
 
   // Verified source metadata
   authenticity?: string;
-
-  // Loaded only when the user requests detail
-  explanation?: {
-    simpleMeaning: string;
-    context: string;
-    example: string;
-    practicalLesson: string;
-    sourceNote?: string;
-  };
 }
