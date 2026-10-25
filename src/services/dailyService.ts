@@ -48,13 +48,6 @@ export async function getDailyContent(
           continue;
         }
 
-        await db.history.add({
-          id: historyId,
-          type,
-          contentId: item.id,
-          seenAt: Date.now(),
-        });
-
         await db.queue.delete(entry.id);
 
         await db.dailySelections.put({
