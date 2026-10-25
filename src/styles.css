@@ -549,3 +549,126 @@ html[data-theme="dark"] .prayer-row {
 .history-card-heading h2 {
   margin-top: 0.25rem;
 }
+
+/* Learning, dua search, and daily practice components */
+.learning-translation {
+  font-size: 16px;
+  line-height: 1.85;
+  white-space: pre-line;
+}
+.explanation-block {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f5f7f1;
+  line-height: 1.7;
+}
+.explanation-block h2 {
+  margin-bottom: 12px;
+}
+.button-secondary {
+  color: #245b43;
+  background: #e8f1e8;
+}
+.search-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+.text-input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #dce5db;
+  border-radius: 13px;
+  padding: 11px 14px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+.text-input:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid #b8d7bd;
+  outline-offset: 2px;
+}
+.dua-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.dua-toggle > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dua-toggle > span:last-child {
+  font-size: 24px;
+  color: #92702d;
+}
+.italic { font-style: italic; }
+.mt-3 { margin-top: 12px !important; }
+.mt-4 { margin-top: 16px !important; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-3 { gap: 12px; }
+.progress-track {
+  height: 8px;
+  overflow: hidden;
+  margin: 16px 0 8px;
+  border-radius: 999px;
+  background: #e7ece4;
+}
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #34714e;
+  transition: width 180ms ease;
+}
+.prayer-checklist {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+.prayer-check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 2px;
+  border-bottom: 1px solid #edf0e9;
+  cursor: pointer;
+}
+.prayer-check-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.prayer-check-row small {
+  color: #7b897f;
+  font-size: 11px;
+}
+.prayer-check-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: #245b43;
+}
+html[data-theme="dark"] .explanation-block,
+html[data-theme="dark"] .text-input {
+  background: #1b2c25;
+  border-color: #34483d;
+  color: #e6eee8;
+}
+html[data-theme="dark"] .progress-track { background: #34483d; }
+html[data-theme="dark"] .prayer-check-row { border-color: #34483d; }
+html[data-theme="dark"] .prayer-check-row small { color: #a6b8ac; }
+.soft-card { background: #fbfaf5; }
+html[data-theme="dark"] .soft-card { background: #1b2c25; }

@@ -65,8 +65,16 @@ export async function getDailyContent(
 
       if (savedItems.length === 0) return null;
 
-      const selected =
-        savedItems[Math.floor(Math.random() * savedItems.length)];
+      const historyRecords = await db.history
+        .where("type")
+        .equals(type)
+        .toArray();
+      const seenIds = new Set(historyRecords.map((record) => record.contentId));
+      const unseenItems = savedItems.filter((item) => !seenIds.has(item.id));
+      const candidates = unseenItems.length > 0 ? unseenItems : savedItems;
+      const selected = candidates[Math.floor(Math.random() * candidates.length)];
+
+      if (!selected) return null;
 
       await db.dailySelections.put({
         id: selectionId,
